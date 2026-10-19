@@ -1,0 +1,37 @@
+name: Multi-Tier Microservices Build Pipeline
+
+on:
+  push:
+    branches: ["main"] # Triggers the pipeline every time you push code to main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Download a copy of your code onto the cloud runner
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      # 2. Log into your Docker Hub account securely using your stored secret
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: "vijay551001"
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 3. Build and upload your BACKEND Python microservice container image
+      - name: Build and Push Backend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: vijay551001/three-tier-backend:latest
+
+      # 4. Build and upload your FRONTEND Nginx dashboard container image
+      - name: Build and Push Frontend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: vijay551001/three-tier-frontend:latest
