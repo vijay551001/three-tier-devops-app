@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Three-Tier Infrastructure Dashboard</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Arial, sans-serif;
+        margin: 40px;
+        background-color: #f4f7f6;
+        color: #333;
+      }
+      .container {
+        max-width: 900px;
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        margin: 0 auto;
+      }
+      h1 {
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 10px;
+        margin-top: 0;
+      }
+      .status-box {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 25px;
+      }
+      .card {
+        flex: 1;
+        padding: 15px;
+        border-radius: 6px;
+        background: #eef2f3;
+        border-left: 5px solid #bdc3c7;
+      }
+      .card.active {
+        border-left-color: #2ecc71;
+        background: #ebf7ee;
+      }
+      .card h3 {
+        margin: 0 0 5px 0;
+        color: #34495e;
+        font-size: 14px;
+        text-transform: uppercase;
+      }
+      .card p {
+        margin: 0;
+        font-size: 18px;
+        font-weight: bold;
+      }
+      .log-table {
+        w_idth: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+      .log-table th,
+      .log-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+      }
+      .log-table th {
+        background-color: #34495e;
+        color: white;
+      }
+      .btn {
+        background-color: #3498db;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        font-size: 14px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      .btn:hover {
+        background-color: #2980b9;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>
+        Three-Tier GitOps Architecture
+        <span
+          style="
+            font-size: 16px;
+            background: #3498db;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            float: right;
+          "
+          >Ubuntu Native v1.0</span
+        >
+      </h1>
+
+      <p>
+        This web interface communicates directly with the isolated Python Flask
+        microservice, which reads and writes database activity rows onto a
+        persistent PostgreSQL cluster volume dynamically.
+      </p>
+
+      <div class="status-box">
+        <div id="api-card" class="card">
+          <h3>Backend API Status</h3>
+          <p id="api-status">Checking...</p>
+        </div>
+        <div id="db-card" class="card">
+          <h3>PostgreSQL Connection</h3>
+          <p id="db-status">Checking...</p>
+        </div>
+      </div>
+
+      <button class="btn" onclick="fetchDashboardData()">
+        Refresh Live Data
+      </button>
+
+      <h2>Recent Database Cluster Logs</h2>
+      <table class="log-table">
+        <thead>
+          <tr>
+            <th>Log ID</th>
+            <th>Message Status</th>
+            <th>Timestamp (UTC)</th>
+          </tr>
+        </thead>
+        <tbody id="log-data">
+          <tr>
+            <td colspan="3" style="text-align: center; color: #888">
+              No data loaded yet. Click refresh.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <script>
+      async function fetchDashboardData() {
+        try {
+          // We point directly to the local cluster's backend route handler mapping
+          const response = await fetch("/api/");
+          const data = await response.json();
+
+          if (data.status === "Success") {
+            document.getElementById("api-card").classList.add("active");
+            document.getElementById("api-status").innerText = "🟢 RUNNING";
+
+            if (data.database_connected) {
+              document.getElementById("db-card").classList.add("active");
+              document.getElementById("db-status").innerText = "🟢 CONNECTED";
+            }
+
+            const tbody = document.getElementById("log-data");
+            tbody.innerHTML = ""; // Clear previous table rows
+
+            data.recent_logs.forEach((log) => {
+              const row = `<tr>
+                            <td><strong>#${log.id}</strong></td>
+                            <td>${log.message}</td>
+                            <td><span style="color: #7f8c8d;">${log.timestamp}</span></td>
+                        </tr>`;
+              tbody.innerHTML += row;
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching infrastructure links:", error);
+          document.getElementById("api-status").innerText = "🔴 UNREACHABLE";
+          document.getElementById("db-status").innerText = "🔴 DISCONNECTED";
+        }
+      }
+
+      // Auto-fetch data when the page loads up
+      window.onload = fetchDashboardData;
+    </script>
+  </body>
+</html>
